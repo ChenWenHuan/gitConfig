@@ -1,0 +1,75 @@
+#!/bin/sh
+
+getrealfullprogname()
+{
+    # If possible, handle the case that someone has created a symlink in
+    # /usr/local/bin back to this script in its original unpacked
+    # distribution directory.
+    thisfile=`{ readlink -f "$1" \
+                || { ls -ld "$1" | sed -n -e 's/.* -> //p'; }
+              } 2> /dev/null`
+    case $thisfile in
+        '' ) thisfile=$1 ;;
+    esac
+
+    echo "$thisfile"
+}
+
+topdir()
+{
+    progdir=`dirname "$1"`
+    case $progdir in
+        . | '' | "$1" ) progdir=`pwd` ;;
+    esac
+
+    case $progdir in
+        */bin ) topdir=`dirname "$progdir"` ;;
+        *     ) topdir=$progdir ;;
+    esac
+
+    echo "$topdir"
+}
+
+main()
+{
+    realfullprogname=`getrealfullprogname "$0"`
+            progname=`basename "$realfullprogname"`
+              prefix=`topdir   "$realfullprogname"`
+
+    P4VRES=$prefix/lib/p4v/P4VResources
+    LD_LIBRARY_PATH=$prefix/lib/p4v/qt4/lib${LD_LIBRARY_PATH+:$LD_LIBRARY_PATH}
+    PATH=$prefix/bin:$PATH
+    export P4VRES LD_LIBRARY_PATH PATH
+
+    if grep -q ld-linux-x86-64.so.2 $prefix/bin/$progname.bin > /dev/null 2>&1
+    then
+        libc_dir=$prefix/lib/glibc/x86_64
+        ldso=$libc_dir/ld-linux-x86-64.so.2
+    else
+        libc_dir=$prefix/lib/glibc
+        ldso=$libc_dir/ld-linux.so.2
+    fi
+
+    if [ -d "$libc_dir" ]; then
+        if ! [ -f "$ldso" ]; then
+            /sbin/ldconfig -N -n "$libc_dir"
+        fi
+
+        LD_LIBRARY_PATH=$libc_dir:$LD_LIBRARY_PATH
+        set x "$ldso" "$prefix/bin/$progname.bin" "$@"
+        shift
+    else
+    	set x "$progname.bin" "$@"
+    	shift
+    fi
+
+    case ${P4VLDD+isset} in
+        isset ) export LD_TRACE_LOADED_OBJECTS=1 ;;
+    esac
+
+    exec "$@" || exit $?
+}
+
+main "$@"
+
+# eof

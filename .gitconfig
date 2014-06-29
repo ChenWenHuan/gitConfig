@@ -1,0 +1,24 @@
+[color]
+	ui = auto
+[user]
+	name = wenhuan.chen
+	email = AMT_MASD_WH_Chen@htc.com>
+[commit]
+	template = /home/archermind/.git-template
+[core]
+	editor = vim
+    pager=
+[diff]
+#    external = git_diff_wrapper
+     external = extDiff
+[gui]
+     spellingdictionary = none
+[mergetool]
+     trustExitCode = false
+[merge]
+    tool = p4merge
+[mergetool "p4merge"]
+    cmd = p4merge \"$BASE\" \"$LOCAL\" \"$REMOTE\" \"$MERGED\" 
+[alias]
+	st = status
+	br = branch
